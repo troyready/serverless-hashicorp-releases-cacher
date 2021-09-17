@@ -1,6 +1,6 @@
 {
   "name": "sls-hashicorp-releases-cacher",
-  "version": "1.0.0",
+  "version": "0.2.0",
   "description": "HashiCorp Releases Cacher",
   "main": "index.js",
   "scripts": {
