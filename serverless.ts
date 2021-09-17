@@ -67,7 +67,7 @@ const serverlessConfiguration: AWS = {
         },
       },
     ],
-    timeout: 29,
+    timeout: 28,
   },
   resources: {
     Outputs: {
