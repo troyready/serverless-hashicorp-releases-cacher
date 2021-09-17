@@ -13,10 +13,6 @@ import {
 
 import { https, FollowOptions } from "follow-redirects";
 import { RequestOptions } from "https";
-import { SecureContextOptions } from "tls";
-import * as fs from "fs";
-import * as path from "path";
-import * as tmp from "tmp-promise";
 import { URL } from "url";
 import { Upload } from "@aws-sdk/lib-storage";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
@@ -29,57 +25,6 @@ import "source-map-support/register";
 
 const bucketName = process.env.BUCKET_NAME as string;
 const s3Client = new S3Client({});
-
-/** Download to local file */
-async function httpsGetToFile(
-  options:
-    | string
-    | (
-        | RequestOptions
-        | (SecureContextOptions & {
-            rejectUnauthorized?: boolean | undefined;
-            servername?: string | undefined;
-          } & FollowOptions<RequestOptions>)
-      ),
-  filePath: string,
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const writeStream = fs.createWriteStream(filePath, { flags: "wx" });
-
-    const request = https.get(options, (response) => {
-      if (response.statusCode === 200) {
-        response.pipe(writeStream);
-      } else {
-        writeStream.close();
-        fs.unlink(filePath, () => {}); // eslint-disable-line @typescript-eslint/no-empty-function
-        reject(
-          `Instead of 200, code ${response.statusCode} (${response.statusMessage})`,
-        );
-      }
-    });
-
-    request.on("error", (err) => {
-      writeStream.close();
-      fs.unlink(filePath, () => {}); // eslint-disable-line @typescript-eslint/no-empty-function
-      reject(err.message);
-    });
-
-    writeStream.on("finish", () => {
-      resolve();
-    });
-
-    writeStream.on("error", (err) => {
-      writeStream.close();
-
-      if ((err as NodeJS.ErrnoException).code === "EEXIST") {
-        reject("File already exists");
-      } else {
-        fs.unlink(filePath, () => {}); // eslint-disable-line @typescript-eslint/no-empty-function
-        reject(err.message);
-      }
-    });
-  });
-}
 
 /** Determine if s3 object already exists */
 export async function checkForCachedObject(
@@ -108,22 +53,32 @@ async function getPresignedUrl(objectKey: string): Promise<string> {
 
 /** Cache file on s3 */
 async function cacheOnS3(objectKey: string): Promise<void> {
-  const tmpDir = await tmp.dir({ unsafeCleanup: true });
-  const cachedFilePath = path.join(tmpDir.path, path.basename(objectKey));
   const archiveDownloadOpts = new URL(
     "https://releases.hashicorp.com/" + objectKey,
   ) as FollowOptions<RequestOptions>;
   archiveDownloadOpts.maxBodyLength = 200 * 1024 * 1024;
-  await httpsGetToFile(archiveDownloadOpts, cachedFilePath);
-  const s3Upload = new Upload({
-    client: s3Client,
-    params: {
-      Bucket: bucketName,
-      Key: objectKey,
-      Body: fs.createReadStream(cachedFilePath),
-    },
+
+  await new Promise((resolve, reject) => {
+    try {
+      https.get(archiveDownloadOpts, (res) => {
+        const s3Upload = new Upload({
+          client: s3Client,
+          params: {
+            Bucket: bucketName,
+            Key: objectKey,
+            Body: res,
+          },
+        });
+        s3Upload.done().then((s3UploadOutput) => {
+          resolve(s3UploadOutput);
+        });
+      });
+    } catch (err) {
+      reject(err);
+    }
+  }).catch((reason) => {
+    throw reason;
   });
-  await s3Upload.done();
 }
 
 /** AWS Lambda entrypoint */
@@ -134,7 +89,6 @@ export const handler: APIGatewayProxyHandlerV2 = async (
   const s3ObjectKey = event.rawPath.substring(1);
 
   if (!(await checkForCachedObject(s3ObjectKey))) {
-    console.log("calling cacheOnS3");
     await cacheOnS3(s3ObjectKey);
   }
 
