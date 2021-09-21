@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "docs": "typedoc",
-    "lint": "eslint scripts src serverless.ts --ext .js,.jsx,.ts,.tsx",
+    "lint": "eslint scripts src .eslintrc.js jest.config.js serverless.ts --ext .js,.jsx,.ts,.tsx",
     "lintfix": "npm run lint -- --fix",
     "test": "jest",
     "coverage": "npm test -- --coverage",
