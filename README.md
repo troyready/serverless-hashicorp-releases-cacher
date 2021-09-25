@@ -43,3 +43,15 @@ Serverless [variable lookup](https://serverless.com/framework/docs/providers/aws
 ## Use
 
 Set the stack endpoint as the `TFENV_REMOTE` environment variable, e.g. for the prod stage in Oregon: `export TFENV_REMOTE=$(aws cloudformation --region us-west-2 describe-stacks --stack-name hashicorp-releases-cacher-prod --query "Stacks[0].Outputs[?OutputKey=='HttpApiUrl'].OutputValue" --output text)`
+
+### Terraform Provider Network Mirror Use
+
+The stack endpoint also supports being used as a [Terraform Provider Network Mirror](https://www.terraform.io/docs/internals/provider-network-mirror-protocol.html) when providers are synced to the the prefix `tf-providers-network-mirror` on the S3 bucket, e.g. for the prod stage in Oregon:
+
+```bash
+# cd to terraform directory
+export WORKING_TF_CACHE_DIR=$(mktemp -d)
+terraform providers mirror -platform=linux_arm64 -platform=linux_amd64 -platform=darwin_amd64 -platform=windows_amd64 $WORKING_TF_CACHE_DIR
+aws s3 sync --delete --acl public-read $WORKING_TF_CACHE_DIR/ s3://$(aws cloudformation --region us-west-2 describe-stacks --stack-name hashicorp-releases-cacher-prod --query "Stacks[0].Outputs[?OutputKey=='CacheBucketName'].OutputValue" --output text)/tf-providers-network-mirror/
+echo "provider_installation { network_mirror { url = \"$(aws cloudformation --region us-west-2 describe-stacks --stack-name hashicorp-releases-cacher-prod --query "Stacks[0].Outputs[?OutputKey=='HttpApiUrl'].OutputValue" --output text)/tf-providers-network-mirror/\" } }" >> $HOME/.terraformrc
+```
