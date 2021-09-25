@@ -89,7 +89,14 @@ export const handler: APIGatewayProxyHandlerV2 = async (
   const s3ObjectKey = event.rawPath.substring(1);
 
   if (!(await checkForCachedObject(s3ObjectKey))) {
-    await cacheOnS3(s3ObjectKey);
+    if (s3ObjectKey.startsWith("tf-providers-network-mirror")) {
+      return {
+        body: "Not found",
+        statusCode: 404,
+      };
+    } else {
+      await cacheOnS3(s3ObjectKey);
+    }
   }
 
   return {
