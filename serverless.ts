@@ -26,8 +26,9 @@ const serverlessConfiguration: AWS = {
   },
   plugins: ["serverless-esbuild"],
   provider: {
+    architecture: "arm64",
     name: "aws",
-    runtime: "nodejs14.x",
+    runtime: "nodejs16.x",
     apiGateway: {
       resourcePolicy: [
         {

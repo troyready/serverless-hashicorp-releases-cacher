@@ -21,7 +21,7 @@
     "source-map-support": "^0.5.19"
   },
   "devDependencies": {
-    "@serverless/typescript": "^2.55.0",
+    "@serverless/typescript": "^3.25.0",
     "@types/aws-lambda": "^8.10.83",
     "@types/follow-redirects": "^1.13.1",
     "@types/jest": "^27.0.1",
@@ -36,8 +36,8 @@
     "jest": "^27.0.0",
     "prettier": "^2.2.1",
     "prompt-sync": "^4.2.0",
-    "serverless": "^2.59.0",
-    "serverless-esbuild": "^1.18.1",
+    "serverless": "^3.25.1",
+    "serverless-esbuild": "^1.33.2",
     "ts-jest": "^27.0.5",
     "ts-node": "^8.0.2",
     "typedoc": "^0.15.6",
