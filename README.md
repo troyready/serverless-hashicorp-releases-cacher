@@ -4,9 +4,7 @@
 
 This project deploys a [Serverless](https://serverless.com/cli/) artifact caching service for `releases.hashicorp.com`.
 
-It's primary aim is to support [tfenv](https://github.com/tfutils/tfenv) (& related tools like [ihlp](https://github.com/troyready/ihlp)) in caching Terraform archives.
-
-**NOTE:** Unmodified tfenv is not currently supported, pending acceptance/release [of this PR](https://github.com/tfutils/tfenv/pull/291).
+It's primary aim is to support [tfenv v3+](https://github.com/tfutils/tfenv) (& related tools like [ihlp](https://github.com/troyready/ihlp)) in caching Terraform archives.
 
 ## Setup
 
