@@ -1,89 +1,62 @@
-import type { AWS } from "@serverless/typescript";
+import { serverlessConfiguration } from "./serverless_base";
 
-const cacheBucketResourceName = "CacheBucket";
-
-const serverlessConfiguration: AWS = {
-  custom: {
-    esbuild: {
-      bundle: true,
-      minify: true,
-      sourcemap: true,
+// Authentication option 1: source IPs
+// i.e., running in a VPC
+// Leave off the Condition entirely to permit "public" access
+serverlessConfiguration.provider.apiGateway = {
+  resourcePolicy: [
+    {
+      Effect: "Allow",
+      Principal: "*",
+      Action: "execute-api:Invoke",
+      Resource: ["execute-api:/*/*/*"],
+      // Condition: {
+      //   IpAddress: {
+      //     "aws:SourceIp": ["X.X.X.X"],
+      //   },
+      // },
     },
-  },
-  functions: {
-    dlProxy: {
-      environment: {
-        BUCKET_NAME: {
-          Ref: cacheBucketResourceName,
-        },
-      },
-      handler: "src/index.handler",
-      events: [{ httpApi: "*" }],
-    },
-  },
-  package: {
-    individually: true,
-  },
-  plugins: ["serverless-esbuild"],
-  provider: {
-    architecture: "arm64",
-    name: "aws",
-    runtime: "nodejs16.x",
-    apiGateway: {
-      resourcePolicy: [
-        {
-          Effect: "Allow",
-          Principal: "*",
-          Action: "execute-api:Invoke",
-          Resource: ["execute-api:/*/*/*"],
-          // Condition: {
-          //   IpAddress: {
-          //     "aws:SourceIp": ["X.X.X.X"],
-          //   },
-          // },
-        },
-      ],
-    },
-    iamRoleStatements: [
-      {
-        Effect: "Allow",
-        Action: ["s3:ListBucket"],
-        Resource: {
-          "Fn::GetAtt": [cacheBucketResourceName, "Arn"],
-        },
-      },
-      {
-        Effect: "Allow",
-        Action: ["s3:GetObject", "s3:PutObject"],
-        Resource: {
-          "Fn::Join": [
-            "",
-            [
-              {
-                "Fn::GetAtt": [cacheBucketResourceName, "Arn"],
-              },
-              "/*",
-            ],
-          ],
-        },
-      },
-    ],
-    timeout: 28,
-  },
-  resources: {
-    Outputs: {
-      CacheBucketName: {
-        Description: "Name of the S3 Bucket with cached releases",
-        Value: { Ref: cacheBucketResourceName },
-      },
-    },
-    Resources: {
-      [cacheBucketResourceName]: {
-        Type: "AWS::S3::Bucket",
-      },
-    },
-  },
-  service: "hashicorp-releases-cacher",
+  ],
 };
+
+// // Authentication option 2: Basic/Bearer authentication
+// // (delete the above serverlessConfiguration.provider.apiGateway configuration entirely)
+// const customAuthorizerName = "customAuthorizer";
+// const customAuthorizerFunctionName = "authorizer";
+// const identityPoolResourceName = "IdentityPool";
+// (serverlessConfiguration.provider.httpApi = {
+//   authorizers: {
+//     [customAuthorizerName]: {
+//       enableSimpleResponses: true,
+//       type: "request",
+//       functionName: customAuthorizerFunctionName,
+//     },
+//   },
+// }),
+//   (serverlessConfiguration.functions!.dlProxy.events[0] = {
+//     httpApi: { path: "*", authorizer: customAuthorizerName },
+//   });
+// serverlessConfiguration.functions![customAuthorizerFunctionName] = {
+//   handler: "src/authorizer.handler",
+//   environment: {
+//     JWT_VERIFIER_CONFIGS: {
+//       "Fn::Join": [
+//         "",
+//         [
+//           '[{"issuer":"https://cognito-identity.amazonaws.com","audience":"',
+//           { Ref: identityPoolResourceName },
+//           '","jwksUri":"https://cognito-identity.amazonaws.com/.well-known/jwks_uri"}]',
+//         ],
+//       ],
+//     },
+//   },
+// };
+// serverlessConfiguration.resources!.Resources![identityPoolResourceName] = {
+//   Type: "AWS::Cognito::IdentityPool",
+//   Properties: {
+//     AllowUnauthenticatedIdentities: false,
+//     DeveloperProviderName: "cognitoidentity",
+//   },
+// };
 
 module.exports = serverlessConfiguration;

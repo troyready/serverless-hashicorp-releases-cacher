@@ -6,8 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Optional JWT authentication
+
 ### Changed
-- Switch to arm64 function
+- Switch to arm64 functions
 
 ## [0.3.0] - 2021-09-24
 ### Added

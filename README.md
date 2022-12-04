@@ -11,27 +11,48 @@ It's primary aim is to support [tfenv v3+](https://github.com/tfutils/tfenv) (& 
 ### Pre-reqs
 
 * Clone the project
-* Configure the allowed IPs to access the service:
-    * Search for `aws:SourceIp` in serverless.ts & edit/uncomment the IP restriction, turning:
+* Choose an authentication source, permitted IP addresses or JWT tokens, and edit serverless.ts to use it
+
+#### Authorized IPs
+
+To configure the allowed IPs to access the service, search for `aws:SourceIp` in serverless.ts & edit/uncomment the IP restriction, turning:
 
 ```
-          // Condition: {
-          //   IpAddress: {
-          //     "aws:SourceIp": ["X.X.X.X"],
-          //   },
-          // },
+      // Condition: {
+      //   IpAddress: {
+      //     "aws:SourceIp": ["X.X.X.X"],
+      //   },
+      // },
 ```
 into something like:
 ```
-          Condition: {
-            IpAddress: {
-              "aws:SourceIp": ["1.2.3.4"],
-            },
-          },
+      Condition: {
+        IpAddress: {
+         "aws:SourceIp": ["1.2.3.4"],
+        },
+      },
 ```
 
 Serverless [variable lookup](https://serverless.com/framework/docs/providers/aws/guide/variables/) can be used here to dynamically retrieve the values, e.g. `"aws:SourceIp": ["${ssm:/path/to/stringlistparam~split}"]`
  
+
+#### JWT Tokens
+
+JWT tokens can be used for auth (e.g. for use with [the TFENV_NETRC_PATH environment variable](https://github.com/tfutils/tfenv#tfenv_netrc_path)). The example serverless.ts configuration includes a [Cognito Identity Pool](https://docs.aws.amazon.com/cognito/latest/developerguide/identity-pools.html) that will issue tokens for use with the caching service.
+
+To use it:
+* Edit serverless.ts, and delete or comment out the first source ip auth configuration section (`serverlessConfiguration.provider.apiGateway = {...`)
+* Uncomment the Basic/Bearer authentication section
+* Deploy the stack (see below)
+* Provide the token when using the service. E.g., for the example Cognito Identity Pool config (subsituting your APIGATEWAYDOMAIN, IDENTITYPOOLID, and REGION):
+
+```
+export TFENV_NETRC_PATH="$PWD/.netrc.tfenv"
+echo "machine APIGATEWAYDOMAIN" > $TFENV_NETRC_PATH
+echo "login token" >> $TFENV_NETRC_PATH
+echo "password $(aws cognito-identity get-open-id-token-for-developer-identity --identity-pool-id IDENTITYPOOLID --logins "cognitoidentity=$USER" --region REGION --query "Token" --output text)" >> $TFENV_NETRC_PATH
+```
+
 ### Deploying
 
 * Run `npm install`
