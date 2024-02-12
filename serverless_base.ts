@@ -58,7 +58,7 @@ export const serverlessConfiguration: AWSWithFunctionRoles = {
   provider: {
     architecture: "arm64",
     name: "aws",
-    runtime: "nodejs16.x",
+    runtime: "nodejs20.x",
     timeout: 28,
   },
   resources: {
